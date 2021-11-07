@@ -1,0 +1,8 @@
+llgj multiply_by_10.agh, by Aaron Friesen
+ 0 j - multiplies the given digit by 10
+jRSh - does not perform carries
+ldddddddddj
+jfffffffffh
+j
+lAAAAAAAAAj
+          q
