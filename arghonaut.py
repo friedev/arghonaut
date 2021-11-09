@@ -29,6 +29,13 @@ COLOR_ERROR = 4
 COLOR_INPUT = 5
 COLOR_CURSOR = 6
 
+COLOR_MOVEMENT = 7
+COLOR_JUMP = 8
+COLOR_IO = 9
+COLOR_STACK = 10
+COLOR_MATH = 11
+COLOR_CONDITION = 12
+
 # Maximum columns; strict requirement of Argh! and Aargh!
 COLUMNS = 80
 
@@ -684,6 +691,13 @@ def main(stdscr, args):
     curses.init_pair(COLOR_INPUT, curses.COLOR_BLUE, -1)
     curses.init_pair(COLOR_SPECIAL, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
     curses.init_pair(COLOR_CURSOR, curses.COLOR_BLACK, curses.COLOR_BLUE)
+
+    curses.init_pair(COLOR_MOVEMENT, curses.COLOR_BLUE, -1)
+    curses.init_pair(COLOR_JUMP, curses.COLOR_CYAN, -1)
+    curses.init_pair(COLOR_IO, curses.COLOR_GREEN, -1)
+    curses.init_pair(COLOR_STACK, curses.COLOR_BLUE, -1)
+    curses.init_pair(COLOR_MATH, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
+    curses.init_pair(COLOR_CONDITION, curses.COLOR_BLACK, curses.COLOR_BLUE)
 
     # Require at least 80 characters to display Argh! programs
     if stdscr.getmaxyx()[1] < COLUMNS:
