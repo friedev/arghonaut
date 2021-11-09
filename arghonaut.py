@@ -62,9 +62,7 @@ def to_printable(char, long=False):
     characters are returned as-is.
     '''
     escape = ''
-    if char == ord(' ') and long:
-        return 'SP'
-    elif is_printable(char):
+    if is_printable(char):
         return chr(char)
     elif 0 <= char and char <= 9:
         escape = str(char)
