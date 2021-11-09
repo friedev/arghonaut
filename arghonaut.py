@@ -253,14 +253,18 @@ class State:
                 length += len(printable)
         return length
 
-    @property
-    def bottom_rows(self):
+    def bottom_rows(self, stdscr):
         '''
         Return the number of rows needed to display the bottom portion of the
         output (stdout, stack, status, and padding).
         '''
-        return 8 + len(self.stdout.split('\n')) +\
-            self.stack_text_length // COLUMNS
+        stdout_list = self.stdout.split('\n')
+        stdout_lines = len(stdout_list)
+        max_x = stdscr.getmaxyx()[1]
+        for line in stdout_list:
+            stdout_lines += len(line) // max_x
+        stack_lines = self.stack_text_length // max_x
+        return 9 + stdout_lines + stack_lines
 
     def render_end(self, stdscr):
         '''
@@ -269,7 +273,7 @@ class State:
         return min(len(self.code),
                    self.render_start +
                    stdscr.getmaxyx()[0] -
-                   self.bottom_rows + 1)
+                   self.bottom_rows(stdscr) + 1)
 
     def render_height(self, stdscr):
         '''
@@ -320,6 +324,8 @@ class State:
         # Overlay instruction pointer
         self.render_char(stdscr, self.x, self.y, color_pair=COLOR_POINTER)
 
+        max_x = stdscr.getmaxyx()[1]
+
         # Standard output
         ry += 1
         stdscr.addstr(ry, 0, 'Output:')
@@ -327,7 +333,7 @@ class State:
         stdout_list = self.stdout.split('\n')
         for i in range(len(stdout_list)):
             stdscr.addstr(ry, 0, stdout_list[i])
-            ry += 1
+            ry += len(stdout_list[i]) // max_x + 1
 
         # Stack, using printable characters
         ry += 1
@@ -337,16 +343,16 @@ class State:
         for i in range(len(self.stack)):
             char = self.stack[i]
             if is_printable(char, long=True):
-                stdscr.addstr(ry + (x // COLUMNS), x % COLUMNS, chr(char))
+                stdscr.addstr(ry + (x // max_x), x % max_x, chr(char))
                 x += 1
             else:
                 printable = to_printable(char, long=True)
-                stdscr.addstr(ry + (x // COLUMNS), x % COLUMNS, printable,
+                stdscr.addstr(ry + (x // max_x), x % max_x, printable,
                               curses.color_pair(COLOR_SPECIAL))
                 x += len(printable)
 
         # Status message
-        ry += x // COLUMNS
+        ry += x // max_x
         ry += 2
         if self.needs_input:
             stdscr.addstr(ry, 0, 'Type a character to input.',
