@@ -443,7 +443,7 @@ class State:
         # Parse the instruction to a character for easier handling
         instruction = self.instruction
         if not is_printable(instruction):
-            self.error = 'invalid instruction: ' +\
+            self.error = 'invalid instruction: '\
                         f'{to_printable(instruction)}'
         instruction = chr(instruction)
 
@@ -492,7 +492,7 @@ class State:
                 if batch:
                     print(chr(char), end='')
             else:
-                self.error = 'tried to print unprintable character: ' +\
+                self.error = 'tried to print unprintable character: '\
                              '{to_printable(char)}'
 
         # Print below
@@ -504,7 +504,7 @@ class State:
                 if batch:
                     print(chr(char), end='')
             else:
-                self.error = 'tried to print unprintable character: ' +\
+                self.error = 'tried to print unprintable character: '\
                              '{to_printable(char)}'
 
         # Input above
