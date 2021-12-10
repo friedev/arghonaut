@@ -1,5 +1,5 @@
-lgggggj reverse_fixed_stack.agh, by Aaron Friesen
-      j - reverses a stack of fixed length (5)
+lgggggj # reverse_fixed_stack.agh, by Aaron Friesen
+      j # - reverses a stack of fixed length (5)
 jSSSSSh
 lfffffllj qppppph
       0 j       k

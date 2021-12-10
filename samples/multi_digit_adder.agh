@@ -1,11 +1,11 @@
 lsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssj
  ###########################################################################S
     jDj                                                                     H
- llljhhh multi_digit_adder.agh, by Aaron Friesen
- lDllgjk - reads in two multi-digit integers and computes their sum
- k ,  jk - the integers be delimited by a comma
-jxXRdShk - the line must end with a comma
-D lDlllk - supports integers up to 75 digits
+ llljhhh # multi_digit_adder.agh, by Aaron Friesen
+ lDllgjk # - reads in two multi-digit integers and computes their sum
+ k ,  jk # - the integers be delimited by a comma
+jxXRdShk # - the line must end with a comma
+D lDlllk # - supports integers up to 75 digits
 D
 lffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffflllj
  ###########################################################################   j

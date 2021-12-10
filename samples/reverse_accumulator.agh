@@ -1,5 +1,5 @@
-lslrfsdfj reverse_accumulator.agh, by Aaron Friesen
- 1 2 0  j - repeatedly subtract -1 from '1' in ASCII
+lslrfsdfj # reverse_accumulator.agh, by Aaron Friesen
+ 1 2 0  j # - repeatedly subtract -1 from '1' in ASCII
  jfdRhhhh
  j   k
  lPllk

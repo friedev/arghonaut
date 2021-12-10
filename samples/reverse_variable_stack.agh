@@ -1,6 +1,6 @@
-j;       reverse_variable_stack.agh, by Aaron Friesen
-lSlljhhh - reverse a stack of variable length (up to 12)
- lDllgjk - bad implementation, see multi_digit_adder.agh for a better one
+j;       # reverse_variable_stack.agh, by Aaron Friesen
+lSlljhhh # - reverse a stack of variable length (up to 12)
+ lDllgjk # - bad implementation, see multi_digit_adder.agh for a better one
  k ,  jk
 jxXRdShk
 D lDlllk
