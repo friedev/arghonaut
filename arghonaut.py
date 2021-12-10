@@ -342,25 +342,30 @@ class State:
         # Normal printable character
         if is_printable(char):
             char_cast = chr(char)
-            color_pair = COLOR_DICT.get(char_cast, COLOR_DEFAULT)
+            color_pair = COLOR_DEFAULT
 
-            # Check if this character is commented (non-standard)
-            if color_pair != COLOR_COMMENT:
-                for symbol in self.code[y][:x]:
-                    if (is_printable(symbol) and
-                            COLOR_DICT.get(chr(symbol)) == COLOR_COMMENT):
-                        color_pair = COLOR_COMMENT
-                        break
+            if SYNTAX:
+                color_pair = COLOR_DICT.get(char_cast, COLOR_DEFAULT)
+
+                # Check if this character is commented (non-standard)
+                if color_pair != COLOR_COMMENT:
+                    for symbol in self.code[y][:x]:
+                        if (is_printable(symbol) and
+                                COLOR_DICT.get(chr(symbol)) == COLOR_COMMENT):
+                            color_pair = COLOR_COMMENT
+                            break
 
             attr = curses.color_pair(color_pair)
 
-            # Bold important characters (outside of comments)
-            if color_pair != COLOR_COMMENT and char_cast in BOLD_CHARS:
-                attr |= curses.A_BOLD
+            if SYNTAX:
+                # Bold important characters (outside of comments)
+                if color_pair != COLOR_COMMENT and char_cast in BOLD_CHARS:
+                    attr |= curses.A_BOLD
 
             # Invert foreground and background colors on highlight (like vim)
             if highlight:
                 attr |= curses.A_REVERSE
+
             stdscr.addstr(ry, x, char_cast, attr)
 
         # Special character
@@ -906,7 +911,19 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch',
                         action='store_true',
                         help='run in batch mode (no visualizer)')
+    parser.add_argument('-s', '--syntax',
+                        dest='syntax',
+                        action='store_true',
+                        help='enable syntax highlighted (enabled by default)')
+    parser.add_argument('-S', '--no-syntax',
+                        dest='syntax',
+                        action='store_false',
+                        help='disable syntax highlighted')
+    parser.set_defaults(syntax=True)
     args = parser.parse_args()
+
+    global SYNTAX
+    SYNTAX = args.syntax
 
     # Batch mode (don't run curses)
     if args.batch:
