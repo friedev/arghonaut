@@ -344,7 +344,7 @@ class State:
             char_cast = chr(char)
             color_pair = COLOR_DEFAULT
 
-            if SYNTAX:
+            if ARGS.syntax:
                 color_pair = COLOR_DICT.get(char_cast, COLOR_DEFAULT)
 
                 # Check if this character is commented (non-standard)
@@ -357,7 +357,7 @@ class State:
 
             attr = curses.color_pair(color_pair)
 
-            if SYNTAX:
+            if ARGS.syntax:
                 # Bold important characters (outside of comments)
                 if color_pair != COLOR_COMMENT and char_cast in BOLD_CHARS:
                     attr |= curses.A_BOLD
@@ -742,7 +742,7 @@ def read_lines(file_path):
         return [line[:-1] for line in lines]
 
 
-def main(stdscr, args):
+def main(stdscr):
     '''
     Main render/input loop.
     '''
@@ -754,7 +754,8 @@ def main(stdscr, args):
 
     # Initialize custom colors
     global COLOR_GRAY
-    if curses.can_change_color():
+    COLOR_GRAY = curses.COLOR_WHITE
+    if ARGS.custom_colors and curses.can_change_color():
         COLOR_GRAY = 17
         curses.init_color(COLOR_GRAY, 500, 500, 500)
     else:
@@ -784,7 +785,7 @@ def main(stdscr, args):
         sys.exit(0)
 
     # Set up initial state
-    code = read_lines(args.src.name)
+    code = read_lines(ARGS.src.name)
     state = State(code)
     insert = False
     auto = False
@@ -919,15 +920,23 @@ if __name__ == '__main__':
                         dest='syntax',
                         action='store_false',
                         help='disable syntax highlighted')
+    parser.add_argument('-c', '--custom-colors',
+                        dest='custom_colors',
+                        action='store_true',
+                        help='enable custom colors (e.g. gray), if supported '
+                             'by the terminal')
+    parser.add_argument('-C', '--no-custom-colors',
+                        dest='custom_colors',
+                        action='store_false',
+                        help='disable custom colors (e.g. gray)')
     parser.set_defaults(syntax=True)
-    args = parser.parse_args()
-
-    global SYNTAX
-    SYNTAX = args.syntax
+    parser.set_defaults(custom_colors=True)
+    global ARGS
+    ARGS = parser.parse_args()
 
     # Batch mode (don't run curses)
-    if args.batch:
-        state = State(read_lines(args.src.name))
+    if ARGS.batch:
+        state = State(read_lines(ARGS.src.name))
         eof = False
         while not state.done and not state.error:
             state.step(batch=True)
@@ -948,4 +957,4 @@ if __name__ == '__main__':
     # Interactive mode
     else:
         # Wrapper handles all curses setup, shutdown, and exception handling
-        curses.wrapper(main, args)
+        curses.wrapper(main)
