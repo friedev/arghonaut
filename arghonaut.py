@@ -93,7 +93,7 @@ def is_printable(char, long=False):
     '''
     if long and char == ord(' '):
         return False
-    return 32 <= char and char <= 126
+    return 32 <= char <= 126
 
 
 def to_printable(char, long=False):
@@ -105,7 +105,8 @@ def to_printable(char, long=False):
     escape = ''
     if is_printable(char):
         return chr(char)
-    elif 0 <= char and char <= 9:
+
+    if 0 <= char and char <= 9:
         escape = str(char)
     elif char == ord('\n'):
         escape = 'n'
@@ -114,26 +115,14 @@ def to_printable(char, long=False):
     elif char == ord('\t'):
         escape = 't'
     elif char == curses.ascii.EOT:
-        if long:
-            return 'EOF'
-        else:
-            return 'E'
+        return 'EOF' if long else 'E'
     elif char < 0:
-        if long:
-            return str(int(char))
-        else:
-            return '-'
+        return str(int(char)) if long else '-'
     else:
-        if long:
-            return str(hex(char))
-        else:
-            return '?'
+        return str(hex(char)) if long else '?'
 
     # Append a backslash to escape sequences in long output mode
-    if long:
-        return '\\' + escape
-    else:
-        return escape
+    return '\\' + escape if long else escape
 
 
 class State:
@@ -212,8 +201,7 @@ class State:
         Return the symbol at (x, y) if it is a valid cell. x represents the
         row, and y represents the column.
         '''
-        if self.is_valid(x, y):
-            return self.code[y][x]
+        return self.code[y][x] if self.is_valid(x, y) else None
 
     def get_above(self):
         '''
@@ -250,8 +238,7 @@ class State:
         '''
         Are the given cell coordinates in the bounds of the program?
         '''
-        return 0 <= y and y < len(self.code) and\
-            0 <= x and x < len(self.code[y])
+        return 0 <= y < len(self.code) and 0 <= x < len(self.code[y])
 
     def move_cursor(self, x, y):
         '''
