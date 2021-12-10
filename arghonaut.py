@@ -20,7 +20,7 @@ import curses.ascii
 import sys
 import collections
 
-# Curses color pairs
+# UI colors
 COLOR_DEFAULT = 0
 COLOR_SPECIAL = 1
 COLOR_DONE = 2
@@ -28,6 +28,7 @@ COLOR_ERROR = 3
 COLOR_INPUT = 4
 COLOR_OUTPUT = 5
 
+# Syntax highlighting colors
 COLOR_MOVEMENT = 6
 COLOR_JUMP = 7
 COLOR_IO = 8
@@ -329,6 +330,7 @@ class State:
         if ry < 0 or y > self.render_end(stdscr):
             return
 
+        # Don't render spaces unless they're highlighted
         char = self.code[y][x]
         if char == ord(' '):
             if highlight:
@@ -341,14 +343,22 @@ class State:
         if is_printable(char):
             char_cast = chr(char)
             color_pair = COLOR_DICT.get(char_cast, COLOR_DEFAULT)
-            for symbol in self.code[y][:x + 1]:
-                if (is_printable(symbol) and
-                        COLOR_DICT.get(chr(symbol)) == COLOR_COMMENT):
-                    color_pair = COLOR_COMMENT
-                    break
+
+            # Check if this character is commented (non-standard)
+            if color_pair != COLOR_COMMENT:
+                for symbol in self.code[y][:x]:
+                    if (is_printable(symbol) and
+                            COLOR_DICT.get(chr(symbol)) == COLOR_COMMENT):
+                        color_pair = COLOR_COMMENT
+                        break
+
             attr = curses.color_pair(color_pair)
+
+            # Bold important characters (outside of comments)
             if color_pair != COLOR_COMMENT and char_cast in BOLD_CHARS:
                 attr |= curses.A_BOLD
+
+            # Invert foreground and background colors on highlight (like vim)
             if highlight:
                 attr |= curses.A_REVERSE
             stdscr.addstr(ry, x, char_cast, attr)
@@ -357,6 +367,7 @@ class State:
         else:
             color_pair = COLOR_SPECIAL
             attr = curses.color_pair(color_pair)
+            # Invert foreground and background colors on highlight (like vim)
             if highlight:
                 attr |= curses.A_REVERSE
             stdscr.addstr(ry, x, to_printable(char),
