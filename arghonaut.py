@@ -18,7 +18,7 @@ import argparse
 import curses
 import curses.ascii
 import sys
-import queue
+import collections
 
 # Curses color pairs
 COLOR_DEFAULT = 0
@@ -143,7 +143,7 @@ class State:
         # Stack and I/O
         self.stack = []
         self.stdout = ''
-        self.stdin = queue.Queue()
+        self.stdin = collections.deque()
         self.needs_input = False
         # Diagnostic and rendering information
         self.error = None
@@ -414,7 +414,7 @@ class State:
         '''
         Provide the given character to standard input. To be called externally.
         '''
-        self.stdin.put(char)
+        self.stdin.append(char)
         self.needs_input = False
 
     def input_string(self, string):
@@ -450,7 +450,7 @@ class State:
         # Parse the instruction to a character for easier handling
         instruction = self.instruction
         if not is_printable(instruction):
-            self.error = 'invalid instruction: ' +\
+            self.error = 'invalid instruction: '\
                         f'{to_printable(instruction)}'
         instruction = chr(instruction)
 
@@ -499,7 +499,7 @@ class State:
                 if batch:
                     print(chr(char), end='')
             else:
-                self.error = 'tried to print unprintable character: ' +\
+                self.error = 'tried to print unprintable character: '\
                              '{to_printable(char)}'
 
         # Print below
@@ -511,22 +511,22 @@ class State:
                 if batch:
                     print(chr(char), end='')
             else:
-                self.error = 'tried to print unprintable character: ' +\
+                self.error = 'tried to print unprintable character: '\
                              '{to_printable(char)}'
 
         # Input above
         # Blocks if input is not available
         elif instruction == 'G':
-            if not self.stdin.empty():
-                self.put_above(self.stdin.get())
+            if len(self.stdin) > 0:
+                self.put_above(self.stdin.popleft())
             else:
                 self.needs_input = True
 
         # Input below
         # Blocks if input is not available
         elif instruction == 'g':
-            if not self.stdin.empty():
-                self.put_below(self.stdin.get())
+            if len(self.stdin) > 0:
+                self.put_below(self.stdin.popleft())
             else:
                 self.needs_input = True
 
