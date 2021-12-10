@@ -22,19 +22,52 @@ import collections
 
 # Curses color pairs
 COLOR_DEFAULT = 0
-COLOR_POINTER = 1
-COLOR_SPECIAL = 2
-COLOR_DONE = 3
-COLOR_ERROR = 4
-COLOR_INPUT = 5
-COLOR_CURSOR = 6
+COLOR_SPECIAL = 1
+COLOR_DONE = 2
+COLOR_ERROR = 3
+COLOR_INPUT = 4
+COLOR_OUTPUT = 5
 
-COLOR_MOVEMENT = 7
-COLOR_JUMP = 8
-COLOR_IO = 9
-COLOR_STACK = 10
-COLOR_MATH = 11
-COLOR_CONDITION = 12
+COLOR_MOVEMENT = 6
+COLOR_JUMP = 7
+COLOR_IO = 8
+COLOR_STACK = 9
+COLOR_MATH = 10
+COLOR_CONDITION = 11
+COLOR_QUIT = 12
+COLOR_COMMENT = 13
+
+# Instruction categorization for syntax highlighting
+COLOR_DICT = {
+    'h': COLOR_MOVEMENT,
+    'j': COLOR_MOVEMENT,
+    'k': COLOR_MOVEMENT,
+    'l': COLOR_MOVEMENT,
+    'H': COLOR_JUMP,
+    'J': COLOR_JUMP,
+    'K': COLOR_JUMP,
+    'L': COLOR_JUMP,
+    'p': COLOR_IO,
+    'P': COLOR_IO,
+    'g': COLOR_IO,
+    'G': COLOR_IO,
+    'd': COLOR_STACK,
+    'D': COLOR_STACK,
+    's': COLOR_STACK,
+    'S': COLOR_STACK,
+    'f': COLOR_STACK,
+    'F': COLOR_STACK,
+    'a': COLOR_MATH,
+    'A': COLOR_MATH,
+    'r': COLOR_MATH,
+    'R': COLOR_MATH,
+    'x': COLOR_CONDITION,
+    'X': COLOR_CONDITION,
+    'q': COLOR_QUIT,
+    '#': COLOR_COMMENT,
+}
+
+BOLD_CHARS = 'HJKLgGxXq'
 
 # Maximum columns; strict requirement of Argh! and Aargh!
 COLUMNS = 80
@@ -286,7 +319,7 @@ class State:
         '''
         return self.render_end(stdscr) - self.render_start
 
-    def render_char(self, stdscr, x, y, color_pair=COLOR_DEFAULT):
+    def render_char(self, stdscr, x, y, highlight=False):
         '''
         Render the character at the given code coordinates. Adjusts for render
         offsets.
@@ -297,15 +330,35 @@ class State:
             return
 
         char = self.code[y][x]
+        if char == ord(' '):
+            if highlight:
+                attr = curses.color_pair(COLOR_DEFAULT)
+                attr |= curses.A_REVERSE
+                stdscr.addstr(ry, x, ' ', attr)
+            return
 
         # Normal printable character
         if is_printable(char):
-            stdscr.addstr(ry, x, chr(char), curses.color_pair(color_pair))
+            char_cast = chr(char)
+            color_pair = COLOR_DICT.get(char_cast, COLOR_DEFAULT)
+            for symbol in self.code[y][:x + 1]:
+                if (is_printable(symbol) and
+                        COLOR_DICT.get(chr(symbol)) == COLOR_COMMENT):
+                    color_pair = COLOR_COMMENT
+                    break
+            attr = curses.color_pair(color_pair)
+            if color_pair != COLOR_COMMENT and char_cast in BOLD_CHARS:
+                attr |= curses.A_BOLD
+            if highlight:
+                attr |= curses.A_REVERSE
+            stdscr.addstr(ry, x, char_cast, attr)
 
         # Special character
         else:
-            if color_pair == COLOR_DEFAULT:
-                color_pair = COLOR_SPECIAL
+            color_pair = COLOR_SPECIAL
+            attr = curses.color_pair(color_pair)
+            if highlight:
+                attr |= curses.A_REVERSE
             stdscr.addstr(ry, x, to_printable(char),
                           curses.color_pair(color_pair))
 
@@ -319,21 +372,17 @@ class State:
         ry = 0
         for y in range(self.render_start, self.render_end(stdscr)):
             for x in range(len(self.code[y])):
-                self.render_char(stdscr, x, y)
+                # Highlight if instruction pointer or editing cursor is here
+                highlight = ((x == self.x and y == self.y) or
+                             (x == self.ex and y == self.ey))
+                self.render_char(stdscr, x, y, highlight)
             ry += 1
-
-        # Overlay editing cursor
-        if self.ex is not None and self.ey is not None:
-            self.render_char(stdscr, self.ex, self.ey, color_pair=COLOR_CURSOR)
-
-        # Overlay instruction pointer
-        self.render_char(stdscr, self.x, self.y, color_pair=COLOR_POINTER)
 
         max_x = stdscr.getmaxyx()[1]
 
         # Standard output
         ry += 1
-        stdscr.addstr(ry, 0, 'Output:')
+        stdscr.addstr(ry, 0, 'Output:', curses.color_pair(COLOR_COMMENT))
         ry += 1
         stdout_list = self.stdout.split('\n')
         for i in range(len(stdout_list)):
@@ -342,7 +391,7 @@ class State:
 
         # Stack, using printable characters
         ry += 1
-        stdscr.addstr(ry, 0, 'Stack:')
+        stdscr.addstr(ry, 0, 'Stack:', curses.color_pair(COLOR_COMMENT))
         ry += 1
         x = 0
         for i in range(len(self.stack)):
@@ -629,13 +678,16 @@ class State:
                 self.error = 'tried to pop from an empty stack'
 
         # Behave as "j" if the character to the right is a "!"
-        elif instruction == '#':
-            if self.get(self.x + 1, self.y) == '!':
-                self.dx, self.dy = 0, 1
+        elif (instruction == '#' and
+              self.x == 0 and
+              self.y == 0 and
+              self.get(1, 0) == ord('!')):
+            self.dx, self.dy = 0, 1
 
         # If the symbol is not any above instruction or "q", raise an error
         elif instruction != 'q':
             # Invalid instruction
+            raise Exception(self.get(self.x + 1, self.y))
             self.error = f'invalid instruction: {instruction}'
 
         # Move the instruction pointer if execution is not blocked
@@ -684,20 +736,29 @@ def main(stdscr, args):
     # Allow using default terminal colors (-1 = default color)
     curses.use_default_colors()
 
+    # Initialize custom colors
+    global COLOR_GRAY
+    if curses.can_change_color():
+        COLOR_GRAY = 17
+        curses.init_color(COLOR_GRAY, 500, 500, 500)
+    else:
+        COLOR_GRAY = curses.COLOR_WHITE
+
     # Initialize color pairs
-    curses.init_pair(COLOR_POINTER, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(COLOR_DONE, curses.COLOR_GREEN, -1)
     curses.init_pair(COLOR_ERROR, curses.COLOR_BLACK, curses.COLOR_RED)
-    curses.init_pair(COLOR_INPUT, curses.COLOR_BLUE, -1)
+    curses.init_pair(COLOR_INPUT, curses.COLOR_YELLOW, -1)
+    curses.init_pair(COLOR_OUTPUT, curses.COLOR_YELLOW, -1)
     curses.init_pair(COLOR_SPECIAL, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
-    curses.init_pair(COLOR_CURSOR, curses.COLOR_BLACK, curses.COLOR_BLUE)
 
     curses.init_pair(COLOR_MOVEMENT, curses.COLOR_BLUE, -1)
     curses.init_pair(COLOR_JUMP, curses.COLOR_CYAN, -1)
-    curses.init_pair(COLOR_IO, curses.COLOR_GREEN, -1)
-    curses.init_pair(COLOR_STACK, curses.COLOR_BLUE, -1)
-    curses.init_pair(COLOR_MATH, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
-    curses.init_pair(COLOR_CONDITION, curses.COLOR_BLACK, curses.COLOR_BLUE)
+    curses.init_pair(COLOR_IO, curses.COLOR_YELLOW, -1)
+    curses.init_pair(COLOR_STACK, curses.COLOR_GREEN, -1)
+    curses.init_pair(COLOR_MATH, curses.COLOR_GREEN, -1)
+    curses.init_pair(COLOR_CONDITION, curses.COLOR_MAGENTA, -1)
+    curses.init_pair(COLOR_QUIT, curses.COLOR_RED, -1)
+    curses.init_pair(COLOR_COMMENT, COLOR_GRAY, -1)
 
     # Require at least 80 characters to display Argh! programs
     if stdscr.getmaxyx()[1] < COLUMNS:
