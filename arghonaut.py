@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Arghonaut - Interactive Interpreter for Argh!
 # Copyright (C) 2021 Aaron Friesen
 #
@@ -19,6 +20,11 @@ import curses
 import curses.ascii
 import sys
 import collections
+
+# Gray is not a color built into curses
+# If the terminal supports it, it will be defined as a custom color
+# Otherwise, it will fall back to white
+COLOR_GRAY = curses.COLOR_WHITE
 
 # UI colors
 COLOR_DEFAULT = 0
@@ -106,7 +112,7 @@ def to_printable(char, long=False):
     if is_printable(char):
         return chr(char)
 
-    if 0 <= char and char <= 9:
+    if 0 <= char <= 9:
         escape = str(char)
     elif char == ord('\n'):
         escape = 'n'
@@ -150,8 +156,21 @@ class State:
         # Cursor
         self.ex = 0
         self.ey = 0
-
-        self.reset()
+        # Instruction pointer
+        self.x = 0
+        self.y = 0
+        # Direction
+        self.dx = 0
+        self.dy = 0
+        # Stack and I/O
+        self.stack = []
+        self.stdout = ''
+        self.stdin = collections.deque()
+        self.needs_input = False
+        # Diagnostic and rendering information
+        self.error = None
+        self.pointer_moved = False
+        self.cursor_moved = False
 
     def reset(self):
         '''
@@ -690,7 +709,6 @@ class State:
         # If the symbol is not any above instruction or "q", raise an error
         elif instruction != 'q':
             # Invalid instruction
-            raise Exception(self.get(self.x + 1, self.y))
             self.error = f'invalid instruction: {instruction}'
 
         # Move the instruction pointer if execution is not blocked
@@ -729,9 +747,9 @@ def read_lines(file_path):
         return [line[:-1] for line in lines]
 
 
-def main(stdscr):
+def interactive_main(stdscr):
     '''
-    Main render/input loop.
+    Main render/input loop for interactive mode.
     '''
     # Hide curses cursor
     curses.curs_set(0)
@@ -741,12 +759,9 @@ def main(stdscr):
 
     # Initialize custom colors
     global COLOR_GRAY
-    COLOR_GRAY = curses.COLOR_WHITE
     if ARGS.custom_colors and curses.can_change_color():
         COLOR_GRAY = 17
         curses.init_color(COLOR_GRAY, 500, 500, 500)
-    else:
-        COLOR_GRAY = curses.COLOR_WHITE
 
     # Initialize color pairs
     curses.init_pair(COLOR_DONE, curses.COLOR_GREEN, -1)
@@ -889,59 +904,73 @@ def main(stdscr):
                 sys.exit(0)
 
 
+def batch_main():
+    '''
+    Main render/input loop for batch mode.
+    '''
+    state = State(read_lines(ARGS.src.name))
+    eof = False
+    while not state.done and not state.error:
+        state.step(batch=True)
+        if state.needs_input:
+            # Allow EOF to be entered only once
+            if eof:
+                print('Argh!', 'tried to read input after EOF')
+            else:
+                try:
+                    state.input_string(input() + '\n')
+                except EOFError:
+                    state.input_char(curses.ascii.EOT)
+                    eof = True
+
+    if state.error:
+        print('Argh!', state.error)
+
+
 if __name__ == '__main__':
     # Parse arguments
     parser = argparse.ArgumentParser(
             description='Interactive Interpreter for Argh!')
-    parser.add_argument('src',
-                        type=argparse.FileType('r'),
-                        help='the Argh source file to run')
-    parser.add_argument('-b', '--batch',
-                        action='store_true',
-                        help='run in batch mode (no visualizer)')
-    parser.add_argument('-s', '--syntax',
-                        dest='syntax',
-                        action='store_true',
-                        help='enable syntax highlighted (enabled by default)')
-    parser.add_argument('-S', '--no-syntax',
-                        dest='syntax',
-                        action='store_false',
-                        help='disable syntax highlighted')
-    parser.add_argument('-c', '--custom-colors',
-                        dest='custom_colors',
-                        action='store_true',
-                        help='enable custom colors (e.g. gray), if supported '
-                             'by the terminal')
-    parser.add_argument('-C', '--no-custom-colors',
-                        dest='custom_colors',
-                        action='store_false',
-                        help='disable custom colors (e.g. gray)')
+    parser.add_argument(
+            'src',
+            type=argparse.FileType('r'),
+            help='the Argh! source file to run')
+    parser.add_argument(
+            '-b', '--batch',
+            action='store_true',
+            help='run in batch mode (no visualizer)')
+    syntax_group = parser.add_mutually_exclusive_group()
+    syntax_group.add_argument(
+            '-s', '--syntax',
+            dest='syntax',
+            action='store_true',
+            help='enable syntax highlighted (enabled by default)')
+    syntax_group.add_argument(
+            '-S', '--no-syntax',
+            dest='syntax',
+            action='store_false',
+            help='disable syntax highlighted')
+    custom_colors_group = parser.add_mutually_exclusive_group()
+    custom_colors_group.add_argument(
+            '-c', '--custom-colors',
+            dest='custom_colors',
+            action='store_true',
+            help='enable custom colors (e.g. gray), if supported by the '
+                 'terminal')
+    custom_colors_group.add_argument(
+            '-C', '--no-custom-colors',
+            dest='custom_colors',
+            action='store_false',
+            help='disable custom colors (e.g. gray)')
     parser.set_defaults(syntax=True)
     parser.set_defaults(custom_colors=True)
-    global ARGS
+    # ARGS is global
     ARGS = parser.parse_args()
 
     # Batch mode (don't run curses)
     if ARGS.batch:
-        state = State(read_lines(ARGS.src.name))
-        eof = False
-        while not state.done and not state.error:
-            state.step(batch=True)
-            if state.needs_input:
-                # Allow EOF to be entered only once
-                if eof:
-                    print('Argh!', 'tried to read input after EOF')
-                else:
-                    try:
-                        state.input_string(input() + '\n')
-                    except EOFError:
-                        state.input_char(curses.ascii.EOT)
-                        eof = True
-
-        if state.error:
-            print('Argh!', state.error)
-
+        batch_main()
     # Interactive mode
     else:
         # Wrapper handles all curses setup, shutdown, and exception handling
-        curses.wrapper(main)
+        curses.wrapper(interactive_main)
