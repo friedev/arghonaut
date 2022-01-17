@@ -21,10 +21,9 @@ import curses.ascii
 import sys
 import collections
 
-# Gray is not a color built into curses
-# If the terminal supports it, it will be defined as a custom color
-# Otherwise, it will fall back to white
-COLOR_GRAY = curses.COLOR_WHITE
+# Python curses does not define curses.COLOR_GRAY, even though it appears to be
+# number 8 by default
+COLOR_GRAY = 8
 
 # UI colors
 COLOR_DEFAULT = 0
@@ -757,12 +756,6 @@ def interactive_main(stdscr):
     # Allow using default terminal colors (-1 = default color)
     curses.use_default_colors()
 
-    # Initialize custom colors
-    global COLOR_GRAY
-    if ARGS.custom_colors and curses.can_change_color():
-        COLOR_GRAY = 17
-        curses.init_color(COLOR_GRAY, 500, 500, 500)
-
     # Initialize color pairs
     curses.init_pair(COLOR_DONE, curses.COLOR_GREEN, -1)
     curses.init_pair(COLOR_ERROR, curses.COLOR_BLACK, curses.COLOR_RED)
@@ -950,20 +943,7 @@ if __name__ == '__main__':
             dest='syntax',
             action='store_false',
             help='disable syntax highlighted')
-    custom_colors_group = parser.add_mutually_exclusive_group()
-    custom_colors_group.add_argument(
-            '-c', '--custom-colors',
-            dest='custom_colors',
-            action='store_true',
-            help='enable custom colors (e.g. gray), if supported by the '
-                 'terminal')
-    custom_colors_group.add_argument(
-            '-C', '--no-custom-colors',
-            dest='custom_colors',
-            action='store_false',
-            help='disable custom colors (e.g. gray)')
     parser.set_defaults(syntax=True)
-    parser.set_defaults(custom_colors=True)
     # ARGS is global
     ARGS = parser.parse_args()
 
