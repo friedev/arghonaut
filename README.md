@@ -17,16 +17,16 @@ To use the UI, make sure you have ncurses or a suitable equivalent installed.
 
 ## Usage
 
-To run Arghonaut, execute the following command, where `src.agh` is an Argh! or Aargh! source code file:
+To run Arghonaut interactively, execute the following command, where `src.agh` is an Argh! or Aargh! source code file:
 
 ```sh
-python3 arghonaut.py src.agh
+./arghonaut.py src.agh
 ```
 
 For more detailed usage information, run:
 
 ```sh
-python3 arghonaut.py --help
+./arghonaut.py --help
 ```
 
 ### Keybindings
@@ -63,7 +63,7 @@ If you want to submit a pull request, please follow these guidelines:
 
 - Run the project on some of the examples to test for bugs.
 - Copy the license notice into any new source files.
-- Run the `flake8` linter to check for and fix any coding style issues.
+- Run some Python linters to check for and fix any coding style issues.
 
 ## License
 
