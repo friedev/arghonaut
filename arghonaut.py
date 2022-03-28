@@ -21,6 +21,9 @@ import curses.ascii
 import sys
 import collections
 
+# Command line arguments, set in main
+ARGS = None
+
 # Python curses does not define curses.COLOR_GRAY, even though it appears to be
 # number 8 by default
 COLOR_GRAY = 8
@@ -798,7 +801,7 @@ def interactive_main(stdscr):
             while state.needs_input and auto and input_code == curses.ERR:
                 input_code = stdscr.getch()
         except KeyboardInterrupt:
-            sys.exit(0)
+            sys.exit(1)
 
         stdscr.erase()
 
@@ -920,7 +923,7 @@ def batch_main():
         print('Argh!', state.error)
 
 
-if __name__ == '__main__':
+def main():
     # Parse arguments
     parser = argparse.ArgumentParser(
             description='Interactive Interpreter for Argh!')
@@ -937,14 +940,14 @@ if __name__ == '__main__':
             '-s', '--syntax',
             dest='syntax',
             action='store_true',
-            help='enable syntax highlighted (enabled by default)')
+            help='enable syntax highlighting (enabled by default)')
     syntax_group.add_argument(
             '-S', '--no-syntax',
             dest='syntax',
             action='store_false',
-            help='disable syntax highlighted')
+            help='disable syntax highlighting')
     parser.set_defaults(syntax=True)
-    # ARGS is global
+    global ARGS
     ARGS = parser.parse_args()
 
     # Batch mode (don't run curses)
@@ -954,3 +957,7 @@ if __name__ == '__main__':
     else:
         # Wrapper handles all curses setup, shutdown, and exception handling
         curses.wrapper(interactive_main)
+
+
+if __name__ == '__main__':
+    main()

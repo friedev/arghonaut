@@ -12,7 +12,12 @@ Arghonaut was created by [Aaron Friesen](https://maugrift.com) for FOSS Jam 2021
 
 ## Installation
 
-To install Arghonaut, simply clone the repository.
+To install Arghonaut, clone the repository and run:
+
+```sh
+pip install .
+```
+
 To use the UI, make sure you have ncurses or a suitable equivalent installed.
 
 ## Usage
@@ -20,13 +25,13 @@ To use the UI, make sure you have ncurses or a suitable equivalent installed.
 To run Arghonaut interactively, execute the following command, where `src.agh` is an Argh! or Aargh! source code file:
 
 ```sh
-./arghonaut.py src.agh
+arghonaut src.agh
 ```
 
 For more detailed usage information, run:
 
 ```sh
-./arghonaut.py --help
+arghonaut --help
 ```
 
 ### Keybindings
