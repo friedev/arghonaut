@@ -62,9 +62,9 @@ performed via standard input and standard output. Programs can be run
 interactively with standard input from the keyboard, or with redirected or
 piped input.
 
-## Samples
+## Examples
 
-This repository includes some sample Argh! and Aargh! programs written by me
+This repository includes some example Argh! and Aargh! programs written by me
 (Aaron Friesen). For more examples, refer to the
 [Argh! Mercurial repository](http://hg.intevation.org/argh/file/tip/examples).
 
@@ -72,7 +72,7 @@ This repository includes some sample Argh! and Aargh! programs written by me
 
 If you want to submit a pull request, please follow these guidelines:
 
-- Run the project on some samples to test for bugs.
+- Run the project on some of the examples to test for bugs.
 - Copy the license notice into any new source files.
 - Run the `flake8` linter to check for and fix any coding style issues.
 
