@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Arghonaut - Interactive Interpreter for Argh!
-# Copyright (C) 2021 Aaron Friesen
+# Copyright (C) 2021-2022 Aaron Friesen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -940,7 +940,7 @@ def main():
             '-s', '--syntax',
             dest='syntax',
             action='store_true',
-            help='enable syntax highlighting (enabled by default)')
+            help='enable syntax highlighting (default)')
     syntax_group.add_argument(
             '-S', '--no-syntax',
             dest='syntax',
