@@ -1,19 +1,7 @@
 #!/usr/bin/env python3
-# Arghonaut - Interactive Interpreter for Argh!
-# Copyright (C) 2021-2022 Aaron Friesen
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+Arghonaut - Interactive Interpreter for Argh!
+"""
 
 import argparse
 import curses
@@ -196,83 +184,69 @@ class State:
 
     @property
     def instruction(self):
-        """
-        The symbol at the instruction pointer.
-        """
+        """The symbol at the instruction pointer."""
         return self.code[self.y][self.x]
 
     @property
     def done(self):
-        """
-        True if the program has finished executing normally by reaching a "q"
-        instruction.
-        """
+        """True if the program has finished executing normally."""
         return self.instruction == ord("q")
 
     @property
     def blocked(self):
         """
-        True if the program cannot currently execute further now. May be due to
-        proper or improper termination or an input instruction.
+        True if the program cannot currently execute further now.
+
+        May be due to proper or improper termination or an input instruction.
         """
         return self.done or self.error or self.needs_input
 
     def get(self, x, y):
         """
-        Return the symbol at (x, y) if it is a valid cell. x represents the
-        row, and y represents the column.
+        Return the symbol at (x, y) if it is a valid cell.
+
+        x represents the row, and y represents the column.
         """
         return self.code[y][x] if self.is_valid(x, y) else None
 
     def get_above(self):
-        """
-        Get the symbol in the cell above the instruction pointer.
-        """
+        """Get the symbol in the cell above the instruction pointer."""
         return self.get(self.x, self.y - 1)
 
     def get_below(self):
-        """
-        Get the symbol in the cell below the instruction pointer.
-        """
+        """Get the symbol in the cell below the instruction pointer."""
         return self.get(self.x, self.y + 1)
 
     def put(self, symbol, x, y):
-        """
-        Put the given symbol at the given coordinates, if they are valid.
-        """
+        """Put the given symbol at the given coordinates, if they are valid."""
         if self.is_valid(x, y):
             self.code[y][x] = symbol
 
     def put_above(self, symbol):
-        """
-        Put the given symbol in the cell above the instruction pointer.
-        """
+        """Put the given symbol in the cell above the instruction pointer."""
         self.put(symbol, self.x, self.y - 1)
 
     def put_below(self, symbol):
-        """
-        Put the given symbol in the cell below the instruction pointer.
-        """
+        """Put the given symbol in the cell below the instruction pointer."""
         self.put(symbol, self.x, self.y + 1)
 
     def is_valid(self, x, y):
-        """
-        Are the given cell coordinates in the bounds of the program?
-        """
+        """Are the given cell coordinates in the bounds of the program?"""
         return 0 <= y < len(self.code) and 0 <= x < len(self.code[y])
 
     def move_cursor(self, x, y):
-        """
-        Move the editing cursor to the given cell, if valid.
-        """
+        """Move the editing cursor to the given cell, if valid."""
         if self.is_valid(x, y):
             self.ex, self.ey = x, y
         self.cursor_moved = True
 
     def update_render_range(self, stdscr):
         """
-        Update the start of the rendering range based on the positions and
-        updates of the instruction pointer and the editing cursor.
+        Update the start of the rendering range.
+
+        The new start is based on the positions of the instruction pointer and
+        the editing cursor, and whether or not they have moved since the last
+        update.
         """
         if self.cursor_moved and self.ey < self.render_start:
             self.render_start = self.ey
@@ -287,10 +261,7 @@ class State:
 
     @property
     def stack_text_length(self):
-        """
-        Return the string length of the symbols in the stack once converted to
-        printable form.
-        """
+        """The string length of the stack symbols in their printable form."""
         length = 0
         for char in self.stack:
             if is_printable(char, long=True):
@@ -302,8 +273,9 @@ class State:
 
     def bottom_rows(self, stdscr):
         """
-        Return the number of rows needed to display the bottom portion of the
-        output (stdout, stack, status, and padding).
+        The number of rows needed to display the bottom portion of the output.
+
+        This includes stdout, stack, status, and padding.
         """
         stdout_list = self.stdout.split("\n")
         stdout_lines = len(stdout_list)
@@ -314,9 +286,7 @@ class State:
         return 9 + stdout_lines + stack_lines
 
     def render_end(self, stdscr):
-        """
-        Return the last (lowest) line to render.
-        """
+        """Return the last (lowest) line to render."""
         return min(
             len(self.code),
             self.render_start
@@ -326,15 +296,14 @@ class State:
         )
 
     def render_height(self, stdscr):
-        """
-        Return the number of lines of code to be rendered.
-        """
+        """Return the number of lines of code to be rendered."""
         return self.render_end(stdscr) - self.render_start
 
     def render_char(self, stdscr, x, y, highlight=False):
         """
-        Render the character at the given code coordinates. Adjusts for render
-        offsets.
+        Render the character at the given code coordinates.
+
+        Adjusts for render offsets.
         """
         # Don't render if out of bounds
         ry = y - self.render_start
@@ -370,10 +339,13 @@ class State:
 
             attr = curses.color_pair(color_pair)
 
-            if ARGS.syntax:
-                # Bold important characters (outside of comments)
-                if color_pair != COLOR_COMMENT and char_cast in BOLD_CHARS:
-                    attr |= curses.A_BOLD
+            # Bold important characters (outside of comments)
+            if (
+                ARGS.syntax
+                and color_pair != COLOR_COMMENT
+                and char_cast in BOLD_CHARS
+            ):
+                attr |= curses.A_BOLD
 
             # Invert foreground and background colors on highlight (like vim)
             if highlight:
@@ -459,10 +431,11 @@ class State:
 
     def move(self):
         """
-        Move the instruction pointer in the current direction. Errors if this
-        movement would take the instruction pointer out of bounds, or if no
-        direction was given (can only occur if this is the first symbol in the
-        program).
+        Move the instruction pointer in the current direction.
+
+        Errors if this movement would take the instruction pointer out of
+        bounds, or if no direction was given (can only occur if this is the
+        first symbol in the program).
         """
         if self.dx == 0 and self.dy == 0:
             self.error = "can't move; no direction specified"
@@ -479,9 +452,11 @@ class State:
 
     def jump(self):
         """
-        Jump in the current direction until a symbol is found that matches the
-        symbol at the top of the stack. Errors if the stack is empty or the
-        jump would take the instruction pointer out of bounds.
+        Jump to the next symbol matching the symbol at the top of the stack.
+
+        The jump goes in the current direction of the instruction pointer.
+        Errors if the stack is empty or the jump would take the instruction
+        pointer out of bounds.
         """
         if not self.stack:
             self.error = "tried to pop from an empty stack"
@@ -496,25 +471,86 @@ class State:
                 self.error = "jumped out of bounds"
                 return
 
+    def print(self, char, batch=False):
+        """
+        Prints the given character to stdout.
+
+        Errors when trying to print an unprintable character.
+        """
+        if is_chr(char):
+            self.stdout += chr(char)
+            if batch:
+                print(chr(char), end="")
+        else:
+            self.error = (
+                "tried to print unprintable character: "
+                f"{to_printable(char)}"
+            )
+
     def input_char(self, char):
         """
-        Provide the given character to standard input. To be called externally.
+        Provide the given character to standard input.
+
+        To be called externally.
         """
         self.stdin.append(char)
         self.needs_input = False
 
     def input_string(self, string):
         """
-        Provide all characters in the given string to standard input. To be
-        called externally.
+        Provide all characters in the given string to standard input.
+
+        To be called externally.
         """
         for char in string:
             self.input_char(ord(char))
 
+    def delete(self):
+        """
+        Delete the top value of the stack.
+
+        Errors if the stack is empty.
+        """
+        if self.stack:
+            self.stack.pop()
+        else:
+            self.error = "tried to pop from an empty stack"
+
+    def duplicate(self):
+        """
+        Duplicate the top value of the stack.
+
+        Errors if the stack is empty.
+        """
+        if self.stack:
+            self.stack.append(self.stack[-1])
+        else:
+            self.error = "tried to pop from an empty stack"
+
+    def add(self, addend):
+        """
+        Add the given value to the top value of the stack.
+
+        Errors if the stack is empty.
+        """
+        if self.stack:
+            self.stack[-1] = self.stack[-1] + addend
+        else:
+            self.error = "tried to pop from an empty stack"
+
+    def subtract(self, subtrahend):
+        """
+        Subtract the given value from the top value of the stack.
+
+        Errors if the stack is empty.
+        """
+        if self.stack:
+            self.stack[-1] = self.stack[-1] - subtrahend
+        else:
+            self.error = "tried to pop from an empty stack"
+
     def rotate(self, clockwise):
-        """
-        Rotates the current direction 90 degrees clockwise or counterclockwise.
-        """
+        """Rotates the current direction 90 degrees."""
         swap = self.dx
         self.dx = self.dy
         self.dy = swap
@@ -526,9 +562,10 @@ class State:
 
     def step(self, batch=False):
         """
-        Performs one step of execution if the program is not blocked. Will
-        print to the system's standard output in batch mode. Errors in various
-        cases (see specific instruction comments).
+        Performs one step of execution if the program is not blocked.
+
+        Will print to the system's standard output in batch mode. Errors in
+        various cases (see specific instruction comments).
         """
         if self.blocked:
             return
@@ -576,43 +613,21 @@ class State:
             self.jump()
 
         # Print above
-        # Errors when printing an unprintable character
         elif instruction == "P":
-            char = self.get_above()
-            if is_chr(char):
-                self.stdout += chr(char)
-                if batch:
-                    print(chr(char), end="")
-            else:
-                self.error = (
-                    "tried to print unprintable character: "
-                    f"{to_printable(char)}"
-                )
+            self.print(self.get_above(), batch)
 
         # Print below
-        # Errors when printing an unprintable character
         elif instruction == "p":
-            char = self.get_below()
-            if is_chr(char):
-                self.stdout += chr(char)
-                if batch:
-                    print(chr(char), end="")
-            else:
-                self.error = (
-                    "tried to print unprintable character: "
-                    f"{to_printable(char)}"
-                )
+            self.print(self.get_below(), batch)
 
-        # Input above
-        # Blocks if input is not available
+        # Input above (blocks if input is not available)
         elif instruction == "G":
             if len(self.stdin) > 0:
                 self.put_above(self.stdin.popleft())
             else:
                 self.needs_input = True
 
-        # Input below
-        # Blocks if input is not available
+        # Input below (blocks if input is not available)
         elif instruction == "g":
             if len(self.stdin) > 0:
                 self.put_below(self.stdin.popleft())
@@ -620,20 +635,12 @@ class State:
                 self.needs_input = True
 
         # Delete the top value from the stack
-        # Errors if the stack is empty
         elif instruction == "D":
-            if self.stack:
-                self.stack.pop()
-            else:
-                self.error = "tried to pop from an empty stack"
+            self.delete()
 
         # Duplicate the top value of the stack
-        # Errors if the stack is empty
         elif instruction == "d":
-            if self.stack:
-                self.stack.append(self.stack[-1])
-            else:
-                self.error = "tried to pop from an empty stack"
+            self.duplicate()
 
         # Put EOF in the cell above
         elif instruction == "E":
@@ -644,7 +651,6 @@ class State:
             self.put_below(curses.ascii.EOT)
 
         # Pop above
-        # Errors if the stack is empty
         elif instruction == "F":
             if self.stack:
                 self.put_above(self.stack.pop())
@@ -652,7 +658,6 @@ class State:
                 self.error = "tried to pop from an empty stack"
 
         # Pop below
-        # Errors if the stack is empty
         elif instruction == "f":
             if self.stack:
                 self.put_below(self.stack.pop())
@@ -660,36 +665,20 @@ class State:
                 self.error = "tried to pop from an empty stack"
 
         # Add the above value to the top value of the stack
-        # Errors if the stack is empty
         elif instruction == "A":
-            if self.stack:
-                self.stack[-1] = self.stack[-1] + self.get_above()
-            else:
-                self.error = "tried to pop from an empty stack"
+            self.add(self.get_above())
 
         # Add the below value to the top value of the stack
-        # Errors if the stack is empty
         elif instruction == "a":
-            if self.stack:
-                self.stack[-1] = self.stack[-1] + self.get_below()
-            else:
-                self.error = "tried to pop from an empty stack"
+            self.add(self.get_below())
 
         # Subtract the above value from the top value of the stack
-        # Errors if the stack is empty
         elif instruction == "R":
-            if self.stack:
-                self.stack[-1] = self.stack[-1] - self.get_above()
-            else:
-                self.error = "tried to pop from an empty stack"
+            self.subtract(self.get_above())
 
         # Subtract the below value from the top value of the stack
-        # Errors if the stack is empty
         elif instruction == "r":
-            if self.stack:
-                self.stack[-1] = self.stack[-1] - self.get_below()
-            else:
-                self.error = "tried to pop from an empty stack"
+            self.subtract(self.get_below())
 
         # Push above
         elif instruction == "S":
@@ -700,7 +689,6 @@ class State:
             self.stack.append(self.get_below())
 
         # Turn clockwise if the top value of the stack is negative
-        # Errors if the stack is empty
         elif instruction == "X":
             if self.stack:
                 if self.stack[-1] < 0:
@@ -709,7 +697,6 @@ class State:
                 self.error = "tried to pop from an empty stack"
 
         # Turn counter-clockwise if the top value of the stack is positive
-        # Errors if the stack is empty
         elif instruction == "x":
             if self.stack:
                 if self.stack[-1] > 0:
@@ -737,15 +724,14 @@ class State:
 
     def new_line(self):
         """
-        Appends a new blank line full of spaces to the code (editor
-        functionality).
+        Appends a new blank line full of spaces to the code.
+
+        For use in the editor.
         """
         self.code.append([ord(" ")] * COLUMNS)
 
     def code_to_string(self):
-        """
-        Convert the code to a string for exporting.
-        """
+        """Convert the code to a string for exporting."""
         code = []
         for y in range(len(self.code)):
             code.append("")
@@ -756,28 +742,20 @@ class State:
 
 def read_lines(file_path):
     """
-    Read the lines of the file at the given path into a list of strings,
-    stripping trailing newlines.
+    Read the lines of the given file as a list of strings.
+
+    Strips trailing newlines.
     """
     if not file_path:
         return []
 
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         lines = file.readlines()
         return [line[:-1] for line in lines]
 
 
-def interactive_main(stdscr):
-    """
-    Main render/input loop for interactive mode.
-    """
-    # Hide curses cursor
-    curses.curs_set(0)
-
-    # Allow using default terminal colors (-1 = default color)
-    curses.use_default_colors()
-
-    # Initialize color pairs
+def init_color_pairs():
+    """Initialize curses color pairs."""
     curses.init_pair(COLOR_DONE, curses.COLOR_GREEN, -1)
     curses.init_pair(COLOR_ERROR, curses.COLOR_BLACK, curses.COLOR_RED)
     curses.init_pair(COLOR_INPUT, curses.COLOR_YELLOW, -1)
@@ -793,12 +771,29 @@ def interactive_main(stdscr):
     curses.init_pair(COLOR_QUIT, curses.COLOR_RED, -1)
     curses.init_pair(COLOR_COMMENT, COLOR_GRAY, -1)
 
+
+def init_curses(stdscr):
+    """Perform Arghonaut-specific curses initialization."""
+    # Hide curses cursor
+    curses.curs_set(0)
+
+    # Allow using default terminal colors (-1 = default color)
+    curses.use_default_colors()
+
+    # Initialize color pairs
+    init_color_pairs()
+
     # Require at least 80 characters to display Argh! programs
     if stdscr.getmaxyx()[1] < COLUMNS:
         # addstr will wrap the error message if the window is too small
         stdscr.addstr(0, 0, f"Argh! at least {COLUMNS} columns are required")
         stdscr.getch()
-        sys.exit(0)
+        sys.exit(1)
+
+
+def interactive_main(stdscr):
+    """Main loop for interactive mode."""
+    init_curses(stdscr)
 
     # Set up initial state
     code = read_lines(ARGS.src.name)
@@ -923,9 +918,7 @@ def interactive_main(stdscr):
 
 
 def batch_main():
-    """
-    Main render/input loop for batch mode.
-    """
+    """Main loop for batch mode."""
     state = State(read_lines(ARGS.src.name))
     eof = False
     while not state.done and not state.error:
@@ -946,6 +939,7 @@ def batch_main():
 
 
 def main():
+    """Entry point."""
     # Parse arguments
     parser = argparse.ArgumentParser(
         description="Interactive Interpreter for Argh!"

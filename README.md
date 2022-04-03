@@ -71,7 +71,6 @@ To run Arghonaut from source:
 If you want to submit a pull request, please follow these guidelines:
 
 - Run the project on some of the examples to test for bugs.
-- Copy the license notice into any new source files.
 - Run some Python linters to check for and fix any coding style issues.
 
 ## License
