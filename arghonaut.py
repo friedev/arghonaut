@@ -84,9 +84,10 @@ def is_chr(char):
 
 def is_printable(char, long=False):
     """
-    Is the given character a standard ASCII character that can be printed in a
-    single cell? Newlines and tabs are not included. In long output mode,
-    spaces are not included due to ambiguity in output.
+    Can the given character be printed in a single cell with standard ASCII?
+
+    Newlines and tabs are not included. In long output mode, spaces are not
+    included due to ambiguity in output.
     """
     if long and char == ord(" "):
         return False
@@ -96,6 +97,7 @@ def is_printable(char, long=False):
 def to_printable(char, long=False):
     """
     Converts the given character to a more readable/printable representation.
+
     In long output mode, this may be more than one character long. Printable
     characters are returned as-is.
     """
@@ -122,16 +124,18 @@ def to_printable(char, long=False):
     return "\\" + escape if long else escape
 
 
-class State:
+class ArghInterpreter:
     """
-    The program state. Also tracks some editor information for ease of
-    rendering.
+    An instance of the Argh interpreter and its program state.
+
+    Also tracks some editor information for ease of rendering.
     """
 
     def __init__(self, code):
         """
-        Instantiate a new program with the given code. Code is converted into a
-        2D list of integer character codes.
+        Instantiate a new program with the given code.
+
+        Code is converted into a 2D list of integer character codes.
         """
         self.code = []
         for y in range(len(code)):
@@ -798,21 +802,23 @@ def interactive_main(stdscr):
 
     # Set up initial state
     code = read_lines(ARGS.src.name)
-    state = State(code)
+    interpreter = ArghInterpreter(code)
     insert = False
     auto = False
     input_code = None
 
     # Loop until user the exits
     while True:
-        state.render(stdscr)
+        interpreter.render(stdscr)
 
         stdscr.refresh()
 
         try:
             input_code = stdscr.getch()
             # Block for input if auto mode is enabled
-            while state.needs_input and auto and input_code == curses.ERR:
+            while (
+                interpreter.needs_input and auto and input_code == curses.ERR
+            ):
                 input_code = stdscr.getch()
         except KeyboardInterrupt:
             sys.exit(1)
@@ -821,13 +827,13 @@ def interactive_main(stdscr):
 
         # In insert mode, always insert the next typed character
         if insert:
-            state.put(input_code, state.ex, state.ey)
+            interpreter.put(input_code, interpreter.ex, interpreter.ey)
             insert = False
 
         # If input is needed, always input the next typed character
-        elif state.needs_input:
-            state.input_char(input_code)
-            state.step()
+        elif interpreter.needs_input:
+            interpreter.input_char(input_code)
+            interpreter.step()
 
         # Otherwise, treat the typed character as a command
         else:
@@ -841,7 +847,7 @@ def interactive_main(stdscr):
                 auto = not auto
                 if auto:
                     curses.halfdelay(1)
-                    state.step()
+                    interpreter.step()
                 else:
                     curses.cbreak()
 
@@ -851,35 +857,35 @@ def interactive_main(stdscr):
                 or input_code == curses.ascii.LF
                 or (auto and input_code == curses.ERR)
             ):
-                state.step()
+                interpreter.step()
 
             # Cursor left
             elif input_char == "h":
-                if state.is_valid(state.ex - 1, state.ey):
-                    state.move_cursor(state.ex - 1, state.ey)
+                if interpreter.is_valid(interpreter.ex - 1, interpreter.ey):
+                    interpreter.move_cursor(interpreter.ex - 1, interpreter.ey)
 
             # Cursor right
             elif input_char == "l":
-                if state.is_valid(state.ex + 1, state.ey):
-                    state.move_cursor(state.ex + 1, state.ey)
+                if interpreter.is_valid(interpreter.ex + 1, interpreter.ey):
+                    interpreter.move_cursor(interpreter.ex + 1, interpreter.ey)
 
             # Cursor up
             elif input_char == "k":
-                if state.is_valid(state.ex, state.ey - 1):
-                    state.move_cursor(state.ex, state.ey - 1)
+                if interpreter.is_valid(interpreter.ex, interpreter.ey - 1):
+                    interpreter.move_cursor(interpreter.ex, interpreter.ey - 1)
 
             # Cursor down
             elif input_char == "j":
-                if state.is_valid(state.ex, state.ey + 1):
-                    state.move_cursor(state.ex, state.ey + 1)
+                if interpreter.is_valid(interpreter.ex, interpreter.ey + 1):
+                    interpreter.move_cursor(interpreter.ex, interpreter.ey + 1)
 
             # Return the cursor to the instruction pointer
             elif input_char == "b":
-                state.move_cursor(state.x, state.y)
+                interpreter.move_cursor(interpreter.x, interpreter.y)
 
             # Jump the instruction pointer to the cursor
             elif input_char == "g":
-                state.x, state.y = state.ex, state.ey
+                interpreter.x, interpreter.y = interpreter.ex, interpreter.ey
 
             # Enter insert mode
             elif input_char == "i":
@@ -887,27 +893,27 @@ def interactive_main(stdscr):
 
             # Open a new line
             elif input_char == "o":
-                state.new_line()
+                interpreter.new_line()
 
             # Execute until blocked (no delay)
             elif input_char == "c":
-                while not state.blocked:
-                    state.step()
+                while not interpreter.blocked:
+                    interpreter.step()
 
             # Reset state (excluding unsaved code changes)
             elif input_char == "r":
-                state.reset()
+                interpreter.reset()
 
             # Reset program (including unsaved code changes)
             elif input_char == "n":
-                ex, ey = state.ex, state.ey
-                state = State(code)
-                state.move_cursor(ex, ey)
+                ex, ey = interpreter.ex, interpreter.ey
+                interpreter = ArghInterpreter(code)
+                interpreter.move_cursor(ex, ey)
 
             # Save current code changes to program state
             # Does not modify source file
             elif input_char == "s":
-                code = state.code_to_string()
+                code = interpreter.code_to_string()
 
             # Quit
             elif (
@@ -920,23 +926,23 @@ def interactive_main(stdscr):
 
 def batch_main():
     """Main loop for batch mode."""
-    state = State(read_lines(ARGS.src.name))
+    interpreter = ArghInterpreter(read_lines(ARGS.src.name))
     eof = False
-    while not state.done and not state.error:
-        state.step(batch=True)
-        if state.needs_input:
+    while not interpreter.done and not interpreter.error:
+        interpreter.step(batch=True)
+        if interpreter.needs_input:
             # Allow EOF to be entered only once
             if eof:
                 print("Argh!", "tried to read input after EOF")
             else:
                 try:
-                    state.input_string(input() + "\n")
+                    interpreter.input_string(input() + "\n")
                 except EOFError:
-                    state.input_char(curses.ascii.EOT)
+                    interpreter.input_char(curses.ascii.EOT)
                     eof = True
 
-    if state.error:
-        print("Argh!", state.error)
+    if interpreter.error:
+        print("Argh!", interpreter.error)
 
 
 def main():
