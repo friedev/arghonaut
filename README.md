@@ -5,11 +5,6 @@ Arghonaut is written in Python and includes an ncurses interface.
 
 Arghonaut was created by [Aaron Friesen](https://maugrift.com) for FOSS Jam 2021, a hackathon hosted by the [UNL Operating Systems and Open Source Group](https://os2g.unl.edu).
 
-## Dependencies
-
-- Python 3
-- curses (for the visualizer)
-
 ## Installation
 
 ```sh
@@ -52,7 +47,7 @@ Arghonaut supports the following keybindings:
 ### Batch Mode
 
 Arghonaut can be run in batch mode by adding the `--batch` flag.
-In this mode, the ncurses interface will not be displayed, and input and output will be performed via standard input and standard output.
+In this mode, the curses interface will not be displayed, and input and output will be performed via standard input and standard output.
 Programs can be run interactively with standard input from the keyboard, or with redirected or piped input.
 
 ## Examples
@@ -65,7 +60,7 @@ For more examples, refer to the [Argh! Mercurial repository](http://hg.intevatio
 To run Arghonaut from source:
 
 ```sh
-./arghonaut.py src.agh
+python -m arghonaut src.agh
 ```
 
 If you want to submit a pull request, please follow these guidelines:

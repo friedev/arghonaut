@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
 """
-Arghonaut - Interactive Interpreter for Argh!
+Interactive Interpreter for Argh!
 """
+
+__version__ = "1.4.0"
 
 import argparse
 import curses
