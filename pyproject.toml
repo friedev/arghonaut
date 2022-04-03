@@ -14,4 +14,4 @@ dynamic = ["version", "description"]
 Home = "https://github.com/Maugrift/arghonaut"
 
 [project.scripts]
-arghonaut = "arghonaut:main"
+arghonaut = "arghonaut.main:main"
