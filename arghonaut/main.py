@@ -11,10 +11,10 @@ from .interpreter import ArghInterpreter
 
 # Command line arguments from argparse
 # Stored globally so they can be passed into the curses wrapper
-ARGS = None
+ARGS: argparse.Namespace
 
 
-def batch_main(args):
+def batch_main(args: argparse.Namespace):
     """Main loop for batch mode."""
     interpreter = ArghInterpreter(read_lines(args.src.name))
     eof = False
@@ -35,7 +35,7 @@ def batch_main(args):
         print("Argh!", interpreter.error)
 
 
-def interactive_main(stdscr):
+def interactive_main(stdscr: curses.window):
     """Main loop for interactive mode."""
     init_curses(stdscr)
 
@@ -46,7 +46,7 @@ def interactive_main(stdscr):
     interface.main(stdscr)
 
 
-def main():
+def main() -> None:
     """Entry point."""
     # Parse arguments
     parser = argparse.ArgumentParser(

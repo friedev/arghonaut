@@ -1,9 +1,10 @@
 """Common utilities for use in other modules."""
 
 from curses.ascii import EOT
+from typing import Optional
 
 
-def read_lines(file_path):
+def read_lines(file_path: str) -> list[str]:
     """
     Read the lines of the given file as a list of strings.
 
@@ -17,10 +18,13 @@ def read_lines(file_path):
         return [line[:-1] for line in lines]
 
 
-def is_chr(char):
+def is_chr(char: Optional[int]) -> bool:
     """
     Can the given character be cast to a chr?
     """
+    if char is None:
+        return False
+
     try:
         chr(char)
         return True
@@ -28,7 +32,7 @@ def is_chr(char):
         return False
 
 
-def is_printable(char, long=False):
+def is_printable(char: int, long: bool = False) -> bool:
     """
     Can the given character be printed in a single cell with standard ASCII?
 
@@ -40,7 +44,7 @@ def is_printable(char, long=False):
     return 32 <= char <= 126
 
 
-def to_printable(char, long=False):
+def to_printable(char: int, long: bool = False) -> str:
     """
     Converts the given character to a more readable/printable representation.
 

@@ -5,7 +5,7 @@ import curses
 import sys
 
 from .common import is_chr, is_printable, to_printable
-from .interpreter import COLUMNS
+from .interpreter import ArghInterpreter, COLUMNS
 
 
 # Python curses does not define curses.COLOR_GRAY, even though it appears to be
@@ -31,7 +31,7 @@ COLOR_QUIT = 12
 COLOR_COMMENT = 13
 
 # Instruction categorization for syntax highlighting
-COLOR_DICT = {
+COLOR_DICT: dict[str, int] = {
     "h": COLOR_MOVEMENT,
     "j": COLOR_MOVEMENT,
     "k": COLOR_MOVEMENT,
@@ -66,7 +66,20 @@ BOLD_CHARS = "HJKLgGxXq"
 class ArghInterface:
     """A curses interface to an Argh interpreter instance."""
 
-    def __init__(self, interpreter, syntax=True):
+    interpreter: ArghInterpreter
+    syntax: bool
+    code: list[list[int]]
+    insert: bool
+    auto: bool
+    ex: int
+    ey: int
+    _render_start: int
+    _old_x: int
+    _old_y: int
+    _old_ex: int
+    _old_ey: int
+
+    def __init__(self, interpreter: ArghInterpreter, syntax: bool = True):
         self.interpreter = interpreter
         self.syntax = syntax
 
@@ -87,21 +100,21 @@ class ArghInterface:
         self._old_ey = self.ey
 
     @property
-    def x(self):
+    def x(self) -> int:
         """Shorthand for self.interpreter.x."""
         return self.interpreter.x
 
     @property
-    def y(self):
+    def y(self) -> int:
         """Shorthand for self.interpreter.y."""
         return self.interpreter.y
 
-    def move_cursor(self, x, y):
+    def move_cursor(self, x: int, y: int) -> None:
         """Move the editing cursor to the given cell, if valid."""
         if self.interpreter.is_valid(x, y):
             self.ex, self.ey = x, y
 
-    def _update_render_range(self, stdscr):
+    def _update_render_range(self, stdscr: curses.window) -> None:
         """
         Update the start of the rendering range.
 
@@ -123,7 +136,7 @@ class ArghInterface:
         self._old_x, self._old_y = self.x, self.y
 
     @property
-    def _stack_text_length(self):
+    def _stack_text_length(self) -> int:
         """The string length of the stack symbols in their printable form."""
         length = 0
         for char in self.interpreter.stack:
@@ -134,7 +147,7 @@ class ArghInterface:
                 length += len(printable)
         return length
 
-    def _bottom_rows(self, stdscr):
+    def _bottom_rows(self, stdscr: curses.window) -> int:
         """
         The number of rows needed to display the bottom portion of the output.
 
@@ -148,7 +161,7 @@ class ArghInterface:
         stack_lines = self._stack_text_length // max_x
         return 9 + stdout_lines + stack_lines
 
-    def _render_end(self, stdscr):
+    def _render_end(self, stdscr: curses.window) -> int:
         """Return the last (lowest) line to render."""
         return min(
             len(self.interpreter.code),
@@ -158,11 +171,13 @@ class ArghInterface:
             + 1,
         )
 
-    def _render_height(self, stdscr):
+    def _render_height(self, stdscr: curses.window) -> int:
         """Return the number of lines of code to be rendered."""
         return self._render_end(stdscr) - self._render_start
 
-    def _render_char(self, stdscr, x, y, highlight=False):
+    def _render_char(
+        self, stdscr: curses.window, x: int, y: int, highlight: bool = False
+    ) -> None:
         """
         Render the character at the given code coordinates.
 
@@ -227,7 +242,7 @@ class ArghInterface:
                 ry, x, to_printable(char), curses.color_pair(color_pair)
             )
 
-    def render(self, stdscr):
+    def render(self, stdscr: curses.window) -> None:
         """
         Render the code and status output.
         """
@@ -292,7 +307,7 @@ class ArghInterface:
             ry += 1
             stdscr.addstr(ry, 0, self.interpreter.error)
 
-    def handle_input(self, input_code):
+    def handle_input(self, input_code: int) -> None:
         """Handle a single curses input code."""
         # In insert mode, always insert the next typed character
         if self.insert:
@@ -391,7 +406,7 @@ class ArghInterface:
         ):
             sys.exit(0)
 
-    def main(self, stdscr):
+    def main(self, stdscr: curses.window) -> None:
         """Run a main loop using this interface on the given screen."""
         input_code = None
         while True:
@@ -414,7 +429,7 @@ class ArghInterface:
             self.handle_input(input_code)
 
 
-def init_color_pairs():
+def init_color_pairs() -> None:
     """Initialize curses color pairs."""
     curses.init_pair(COLOR_DONE, curses.COLOR_GREEN, -1)
     curses.init_pair(COLOR_ERROR, curses.COLOR_BLACK, curses.COLOR_RED)
@@ -432,7 +447,7 @@ def init_color_pairs():
     curses.init_pair(COLOR_COMMENT, COLOR_GRAY, -1)
 
 
-def init_curses(stdscr):
+def init_curses(stdscr: curses.window) -> None:
     """Perform Arghonaut-specific curses initialization."""
     # Hide curses cursor
     curses.curs_set(0)

@@ -2,6 +2,7 @@
 
 from collections import deque
 from curses.ascii import EOT
+from typing import Optional
 
 from .common import is_chr, is_printable, to_printable
 
@@ -17,7 +18,18 @@ class ArghInterpreter:
     Also tracks some editor information for ease of rendering.
     """
 
-    def __init__(self, code):
+    code: list[list[int]]
+    x: int
+    y: int
+    dx: int
+    dy: int
+    stack: list[int]
+    stdout: str
+    stdin: deque[int]
+    needs_input: bool
+    error: Optional[str]
+
+    def __init__(self, code: list[str]):
         """
         Instantiate a new program with the given code.
 
@@ -46,7 +58,7 @@ class ArghInterpreter:
         # Diagnostic and rendering information
         self.error = None
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Reset all values of the program state other than code.
         """
@@ -64,58 +76,59 @@ class ArghInterpreter:
         self.error = None
 
     @property
-    def instruction(self):
+    def instruction(self) -> int:
         """The symbol at the instruction pointer."""
         return self.code[self.y][self.x]
 
     @property
-    def done(self):
+    def done(self) -> bool:
         """True if the program has finished executing normally."""
         return self.instruction == ord("q")
 
     @property
-    def blocked(self):
+    def blocked(self) -> bool:
         """
         True if the program cannot currently execute further now.
 
         May be due to proper or improper termination or an input instruction.
         """
-        return self.done or self.error or self.needs_input
+        return self.done or self.error is not None or self.needs_input
 
-    def get(self, x, y):
+    def get(self, x: int, y: int) -> int:
         """
         Return the symbol at (x, y) if it is a valid cell.
 
         x represents the row, and y represents the column.
         """
-        return self.code[y][x] if self.is_valid(x, y) else None
+        assert self.is_valid(x, y)
+        return self.code[y][x]
 
-    def _get_above(self):
+    def _get_above(self) -> int:
         """Get the symbol in the cell above the instruction pointer."""
         return self.get(self.x, self.y - 1)
 
-    def _get_below(self):
+    def _get_below(self) -> int:
         """Get the symbol in the cell below the instruction pointer."""
         return self.get(self.x, self.y + 1)
 
-    def put(self, symbol, x, y):
+    def put(self, symbol: int, x: int, y: int) -> None:
         """Put the given symbol at the given coordinates, if they are valid."""
         if self.is_valid(x, y):
             self.code[y][x] = symbol
 
-    def _put_above(self, symbol):
+    def _put_above(self, symbol: int) -> None:
         """Put the given symbol in the cell above the instruction pointer."""
         self.put(symbol, self.x, self.y - 1)
 
-    def _put_below(self, symbol):
+    def _put_below(self, symbol: int) -> None:
         """Put the given symbol in the cell below the instruction pointer."""
         self.put(symbol, self.x, self.y + 1)
 
-    def is_valid(self, x, y):
+    def is_valid(self, x: int, y: int) -> bool:
         """Are the given cell coordinates in the bounds of the program?"""
         return 0 <= y < len(self.code) and 0 <= x < len(self.code[y])
 
-    def _move(self):
+    def _move(self) -> bool:
         """
         Move the instruction pointer in the current direction.
 
@@ -135,7 +148,7 @@ class ArghInterpreter:
         self.error = "moved out of bounds"
         return False
 
-    def _jump(self):
+    def _jump(self) -> None:
         """
         Jump to the next symbol matching the symbol at the top of the stack.
 
@@ -156,7 +169,7 @@ class ArghInterpreter:
                 self.error = "jumped out of bounds"
                 return
 
-    def _print(self, char, batch=False):
+    def _print(self, char: int, batch: bool = False) -> None:
         """
         Prints the given character to stdout.
 
@@ -172,7 +185,7 @@ class ArghInterpreter:
                 f"{to_printable(char)}"
             )
 
-    def input_char(self, char):
+    def input_char(self, char: int) -> None:
         """
         Provide the given character to standard input.
 
@@ -181,7 +194,7 @@ class ArghInterpreter:
         self.stdin.append(char)
         self.needs_input = False
 
-    def input_string(self, string):
+    def input_string(self, string) -> None:
         """
         Provide all characters in the given string to standard input.
 
@@ -190,7 +203,7 @@ class ArghInterpreter:
         for char in string:
             self.input_char(ord(char))
 
-    def _delete(self):
+    def _delete(self) -> None:
         """
         Delete the top value of the stack.
 
@@ -201,7 +214,7 @@ class ArghInterpreter:
         else:
             self.error = "tried to pop from an empty stack"
 
-    def _duplicate(self):
+    def _duplicate(self) -> None:
         """
         Duplicate the top value of the stack.
 
@@ -212,7 +225,7 @@ class ArghInterpreter:
         else:
             self.error = "tried to pop from an empty stack"
 
-    def _add(self, addend):
+    def _add(self, addend: int) -> None:
         """
         Add the given value to the top value of the stack.
 
@@ -223,7 +236,7 @@ class ArghInterpreter:
         else:
             self.error = "tried to pop from an empty stack"
 
-    def _subtract(self, subtrahend):
+    def _subtract(self, subtrahend: int) -> None:
         """
         Subtract the given value from the top value of the stack.
 
@@ -234,7 +247,7 @@ class ArghInterpreter:
         else:
             self.error = "tried to pop from an empty stack"
 
-    def _rotate(self, clockwise):
+    def _rotate(self, clockwise: bool) -> None:
         """Rotates the current direction 90 degrees."""
         swap = self.dx
         self.dx = self.dy
@@ -245,7 +258,7 @@ class ArghInterpreter:
         else:
             self.dy = -self.dy
 
-    def step(self, batch=False):
+    def step(self, batch: bool = False) -> None:
         """
         Performs one step of execution if the program is not blocked.
 
@@ -256,10 +269,12 @@ class ArghInterpreter:
             return
 
         # Parse the instruction to a character for easier handling
-        instruction = self.instruction
-        if not is_printable(instruction):
-            self.error = f"invalid instruction: {to_printable(instruction)}"
-        instruction = chr(instruction)
+        instruction_int = self.instruction
+        if not is_printable(instruction_int):
+            self.error = (
+                f"invalid instruction: {to_printable(instruction_int)}"
+            )
+        instruction = chr(instruction_int)
 
         # Set direction to left
         if instruction == "h":
@@ -407,7 +422,7 @@ class ArghInterpreter:
         if not self.blocked:
             self._move()
 
-    def new_line(self):
+    def new_line(self) -> None:
         """
         Appends a new blank line full of spaces to the code.
 
@@ -415,8 +430,8 @@ class ArghInterpreter:
         """
         self.code.append([ord(" ")] * COLUMNS)
 
-    def code_to_string(self):
-        """Convert the code to a string for exporting."""
+    def code_to_string(self) -> list[str]:
+        """Convert the code to a list of strings for exporting."""
         code = []
         for y in range(len(self.code)):
             code.append("")
