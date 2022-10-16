@@ -1,3 +1,3 @@
 """Interactive Interpreter for Argh!"""
 
-__version__ = "2.0.0-dev"
+__version__ = "1.5.0"

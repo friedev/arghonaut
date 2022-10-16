@@ -4,14 +4,14 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "arghonaut"
-authors = [{name = "Aaron Friesen", email = "maugrift@maugrift.com"}]
+authors = [{name = "Aaron Friesen"}]
 readme = "README.md"
 license = {file = "LICENSE.txt"}
 classifiers = ["License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)"]
 dynamic = ["version", "description"]
 
 [project.urls]
-Home = "https://github.com/Maugrift/arghonaut"
+Home = "https://frie.dev/arghonaut"
 
 [project.scripts]
 arghonaut = "arghonaut.main:main"

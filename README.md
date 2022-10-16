@@ -3,7 +3,7 @@
 Arghonaut is an interactive interpreter, visualizer, and debugger for [Argh! and Aargh!](https://esolangs.org/wiki/Argh!), which are [Befunge](https://esolangs.org/wiki/Befunge)-like esoteric programming languages designed by Sascha Wilde.
 Arghonaut is written in Python and includes an ncurses interface.
 
-Arghonaut was created by [Aaron Friesen](https://maugrift.com) for FOSS Jam 2021, a hackathon hosted by the [UNL Operating Systems and Open Source Group](https://os2g.unl.edu).
+Arghonaut was created by [Aaron Friesen](https://frie.dev) for FOSS Jam 2021, a hackathon hosted by the [UNL Operating Systems and Open Source Group](https://os2g.unl.edu).
 
 ## Installation
 
@@ -52,7 +52,7 @@ Programs can be run interactively with standard input from the keyboard, or with
 
 ## Examples
 
-This repository includes some example Argh! and Aargh! programs written by me (Aaron Friesen).
+This repository includes some example Argh! and Aargh! programs written by Aaron Friesen.
 For more examples, refer to the [Argh! Mercurial repository](http://hg.intevation.org/argh/file/tip/examples).
 
 ## Contributing
@@ -63,7 +63,7 @@ To run Arghonaut from source:
 python -m arghonaut src.agh
 ```
 
-If you want to submit a pull request, please follow these guidelines:
+If you want to submit a patch, please follow these guidelines:
 
 - Run the project on some of the examples to test for bugs.
 - Run some Python linters to check for and fix any coding style issues.
