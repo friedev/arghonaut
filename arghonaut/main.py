@@ -65,18 +65,10 @@ def main() -> None:
     )
     syntax_group = parser.add_mutually_exclusive_group()
     syntax_group.add_argument(
-        "-s",
         "--syntax",
         dest="syntax",
-        action="store_true",
-        help="enable syntax highlighting (default)",
-    )
-    syntax_group.add_argument(
-        "-S",
-        "--no-syntax",
-        dest="syntax",
-        action="store_false",
-        help="disable syntax highlighting",
+        action=argparse.BooleanOptionalAction,
+        help="enable/disable syntax highlighting (default: enabled)",
     )
     parser.set_defaults(syntax=True)
     args = parser.parse_args()
